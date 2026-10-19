@@ -1,8 +1,19 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
+import { createAccessVerifier } from "./auth/access.ts";
+import { loadConfig } from "./config.ts";
+import { createFetchText } from "./fetch/fetchText.ts";
 
-const port = Number(process.env.PORT ?? 8080);
-const server = serve({ fetch: createApp().fetch, port }, (info) => {
+const config = loadConfig(process.env);
+const app = createApp({
+	verifyAccess: createAccessVerifier({
+		teamDomain: config.accessTeamDomain,
+		audience: config.accessAudience,
+	}),
+	fetchText: createFetchText(config),
+});
+
+const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
 	console.log(`chatsumi listening on :${info.port}`);
 });
 
