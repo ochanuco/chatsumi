@@ -52,7 +52,7 @@ chatsumi は外のデータを摘んでくる窓口。docker01 で動くコン�
 - 弾かれた：`forbidden`、`challenge`、`rate_limited`
 - 中身が空：取得は成功したが、本文のテキストが 200 文字に満たない
 
-`ssrf_blocked`、`not_found`、`auth_required`、`too_large`、`unsupported_content_type`、`timeout` はやり直さない。browser でも結果が変わらないか、制限時間を使い切っているため。browser でやり直して失敗したときは、browser の失敗を返す。
+`ssrf_blocked`、`not_found`、`auth_required`、`too_large`、`unsupported_content_type`、`timeout` はやり直さない。browser でも結果が変わらないか、制限時間を使い切っているため。弾かれてやり直した browser も失敗したときは、browser の失敗を返す。中身が空でやり直した browser が失敗したときは、http の結果を返す。
 
 ### `POST /listRecent`（段階 2）
 
@@ -74,7 +74,14 @@ utsuroi の `executors/shared`（Node 版）を移植する。
 - 接続先は検査したアドレスに固定する（`lookup` の差し替え）。DNS の rebinding で検査後に宛先がすり替わらないようにするため。
 - リダイレクトは手で辿り、1 回ごとに同じ検査をやり直す。上限は 5 回。
 
-browser の取得では、ページが出すすべてのリクエストを `page.route` で止めて同じ検査を通す。Playwright の route はリダイレクトの先を止めないため、文書のリクエストは chatsumi 側の検査つきの取得で取って `route.fulfill` で返し、ブラウザが次のリダイレクトを出したらまた route で止まるようにする。WebSocket と Service Worker は使わせない。サブリソースは検査した後にブラウザが自分で DNS を引くので、rebinding の余地は残る。サブリソースの応答はページの描画にしか使わず chatsumi の外に出ないため、これは受け入れる。
+browser の取得では、ページが出すすべてのリクエスト（iframe とポップアップを含む）を context の `route` で止めて同じ検査を通す。WebSocket と Service Worker は使わせない。
+
+文書のリクエストを chatsumi 側で取って `route.fulfill` で返せばリダイレクトも止められるが、それでは TLS の指紋が Node のものになり、browser に切り替える意味がなくなる。そこで文書もブラウザに取らせ、route で止められない 2 つの経路は後から確かめる。
+
+- リダイレクトの先：Playwright の route はリダイレクトの先を止めない
+- DNS の rebinding：検査の後にブラウザが自分で DNS を引き直す
+
+すべての応答の接続先アドレス（`response.serverAddr()`）を確かめ、拒否範囲に届いた応答が 1 つでもあれば取得結果ごと捨てて `ssrf_blocked` を返す。中身は chatsumi の外に出ないが、内部のアドレスへの GET が 1 回届くことは防げない。これは共有ブラウザのコンテナの外向きの通信を chabatake 側で絞って塞ぐ。
 
 ## Epic 一覧
 
@@ -134,6 +141,7 @@ F05 は F04 を待たずに http だけで組み立て、F04 が入ったら bro
 
 - sockpuppetbrowser は接続ごとにブラウザを立ち上げる。Playwright の `connectOverCDP` で接続でき、`browser.close()` で後始末されるかを docker01 で確かめる。
 - sockpuppetbrowser の同時接続の上限と、changedetection.io と取り合ったときの待ち方。chatsumi 側でも browser の同時実行を絞る。
+- 共有ブラウザのコンテナから宅内のネットワークと docker01 のほかのコンテナへの通信を絞れるか（上の SSRF の残りを塞ぐため）。
 - Cloudflare Access の JWT を chatsumi で検証するために、チームドメインと Application の AUD を chabatake の `docker01/chatsumi/` の環境変数に渡す。
 
 ## 判断が必要な点
