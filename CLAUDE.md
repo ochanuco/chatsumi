@@ -8,13 +8,17 @@ chatsumi は外のデータを摘んでくる窓口で、状態を持たない�
 
 - `pnpm install`
 - `pnpm typecheck && pnpm lint && pnpm test`: PR 前に必ず通す
-- `pnpm dev`: ローカルで起動（`PORT` 既定 8080）
+- `pnpm dev`: ローカルで起動（環境変数は README）
+- `CHATSUMI_TEST_CHROME=<Chrome の実行ファイル> pnpm test`: 実ブラウザでのテストも動かす（CI では飛ばす）
 - `pnpm format`: Biome で整形（lint も Biome）
 
 ## 構成
 
 - `src/main.ts`: 起動とシグナル処理だけを持つ。ビルドせず Node 24 の type stripping で実行する
-- `src/app.ts`: Hono の HTTP API。ルートの組み立てだけを持つ
+- `src/app.ts`: Hono の HTTP API。Access の JWT の検証、入力の検証、ログ。`src/api.ts` が API の型と入力のスキーマを持つ
+- `src/config.ts`: 環境変数の読み込みと検証。不正なら起動しない
+- `src/fetch/`: 取得。`ssrf.ts`（宛先の検査）、`http.ts`（検査つきの http の取得）、`browser.ts`（共有ブラウザでの取得）、`classify.ts`（ステータスと challenge の分類）、`fetchText.ts`（組み立てと mode の切り替え）
+- `src/extract/`: 文字コードの判定、タイトルと本文の取り出し、切り詰め
 - イメージは `main` への push で `ghcr.io/ochanuco/chatsumi:{sha-xxxxxxx,main}` に出る。本番のタグは chabatake 側の Renovate が上げる
 
 ## コーディング規約
