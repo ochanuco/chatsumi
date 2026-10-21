@@ -1,4 +1,4 @@
-FROM node:24-slim AS build
+FROM node:24.22.1-slim AS build
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable
@@ -8,7 +8,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --prod
 COPY src ./src
 
-FROM node:24-slim
+FROM node:24.22.1-slim
 ENV NODE_ENV=production
 ENV PORT=8080
 WORKDIR /app
