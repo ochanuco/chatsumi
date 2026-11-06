@@ -47,6 +47,8 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      tag: ${{ steps.tags.outputs.sha }}
     permissions:
       contents: read
       packages: write
@@ -70,3 +72,22 @@ jobs:
           tags: |
             ghcr.io/ochanuco/chatsumi:${{ steps.tags.outputs.sha }}
             ghcr.io/ochanuco/chatsumi:main
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    concurrency:
+      group: docker01-chatsumi
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/docker01-app
+        with:
+          service: chatsumi
+          tag: ${{ needs.publish.outputs.tag }}
+          op-service-account-token: ${{ secrets.OP_SA_DEPLOY }}
