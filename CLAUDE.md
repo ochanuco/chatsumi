@@ -19,7 +19,7 @@ chatsumi は外のデータを摘んでくる窓口で、状態を持たない�
 - `src/config.ts`: 環境変数の読み込みと検証。不正なら起動しない
 - `src/fetch/`: 取得。`ssrf.ts`（宛先の検査）、`http.ts`（検査つきの http の取得）、`browser.ts`（共有ブラウザでの取得）、`classify.ts`（ステータスと challenge の分類）、`fetchText.ts`（組み立てと mode の切り替え）
 - `src/extract/`: 文字コードの判定、タイトルと本文の取り出し、切り詰め
-- イメージは `main` への push で `ghcr.io/ochanuco/chatsumi:{sha-xxxxxxx,main}` に出る。本番のタグは chabatake 側の Renovate が上げる
+- イメージは `main` への push で `ghcr.io/ochanuco/chatsumi:{sha-xxxxxxx,main}` に出る。続けて `deploy` job が chabatake の `docker01-app` を dispatch し、その版を docker01 に配置する（`.github/actions/docker01-app`）。Environment `production` の secret `OP_SA_DEPLOY` を使う
 
 ## コーディング規約
 
