@@ -20,16 +20,16 @@ curl -X POST localhost:8080/fetchText -H 'content-type: application/json' \
 
 ## 環境変数
 
-| 名前 | 必須 | 内容 |
-| --- | --- | --- |
-| `CF_ACCESS_TEAM_DOMAIN` | ○ | Access のチームドメイン（`<team>.cloudflareaccess.com`） |
-| `CF_ACCESS_AUD` | ○ | Access の Application の AUD |
-| `BROWSER_CDP_URL` | | 共有ブラウザの CDP（docker01 では `ws://host.docker.internal:3000`）。なければ browser を使わない |
-| `BROWSER_MAX_CONCURRENCY` | | browser の同時実行数（既定 2） |
-| `SSRF_EXTRA_BLOCKED_CIDRS` | | 追加で拒否する CIDR（カンマ区切り）。宅内の公開アドレスなど |
-| `MAX_TEXT_CHARS` | | 本文の切り詰めの長さ（既定 20000） |
-| `USER_AGENT` | | http の取得の User-Agent |
-| `PORT` | | 待ち受けのポート（既定 8080） |
+| 名前                       | 必須 | 内容                                                                                              |
+| -------------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| `CF_ACCESS_TEAM_DOMAIN`    | ○    | Access のチームドメイン（`<team>.cloudflareaccess.com`）                                          |
+| `CF_ACCESS_AUD`            | ○    | Access の Application の AUD                                                                      |
+| `BROWSER_CDP_URL`          |      | 共有ブラウザの CDP（docker01 では `ws://host.docker.internal:3000`）。なければ browser を使わない |
+| `BROWSER_MAX_CONCURRENCY`  |      | browser の同時実行数（既定 2）                                                                    |
+| `SSRF_EXTRA_BLOCKED_CIDRS` |      | 追加で拒否する CIDR（カンマ区切り）。宅内の公開アドレスなど                                       |
+| `MAX_TEXT_CHARS`           |      | 本文の切り詰めの長さ（既定 20000）                                                                |
+| `USER_AGENT`               |      | http の取得の User-Agent                                                                          |
+| `PORT`                     |      | 待ち受けのポート（既定 8080）                                                                     |
 
 ## 開発
 
