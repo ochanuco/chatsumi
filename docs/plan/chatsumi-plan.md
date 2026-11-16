@@ -17,10 +17,10 @@ chatsumi は外のデータを摘んでくる窓口。docker01 で動くコン�
 
 入力：
 
-| 項目 | 型 | 内容 |
-| --- | --- | --- |
-| `url` | string | http / https の URL。2048 文字まで |
-| `mode` | `"http"` \| `"browser"`（省略可） | 省くと自動で切り替える |
+| 項目   | 型                                | 内容                               |
+| ------ | --------------------------------- | ---------------------------------- |
+| `url`  | string                            | http / https の URL。2048 文字まで |
+| `mode` | `"http"` \| `"browser"`（省略可） | 省くと自動で切り替える             |
 
 成功：`{ ok: true, title, text, truncated, finalUrl, mode, status }`
 
@@ -30,20 +30,20 @@ chatsumi は外のデータを摘んでくる窓口。docker01 で動くコン�
 
 失敗：`{ ok: false, error: { type, message, mode } }`。HTTP のステータスは 200 で返し、`type` で判別する。
 
-| `type` | 意味 |
-| --- | --- |
-| `ssrf_blocked` | 宛先が内部のアドレス、許していないスキームやポート |
-| `not_found` | 404 / 410 |
-| `auth_required` | 401 / 407 |
-| `forbidden` | 403（challenge の印がない） |
-| `challenge` | Cloudflare などの challenge、captcha |
-| `rate_limited` | 429 |
-| `upstream_error` | 5xx、想定外のステータス |
-| `too_large` | 展開後の本文が上限（5 MiB）を超えた |
-| `unsupported_content_type` | HTML とテキスト以外 |
-| `timeout` | 全体の制限時間を超えた |
-| `network_error` | DNS の失敗、接続の失敗、リダイレクトの上限 |
-| `browser_unavailable` | 共有ブラウザにつながらない |
+| `type`                     | 意味                                               |
+| -------------------------- | -------------------------------------------------- |
+| `ssrf_blocked`             | 宛先が内部のアドレス、許していないスキームやポート |
+| `not_found`                | 404 / 410                                          |
+| `auth_required`            | 401 / 407                                          |
+| `forbidden`                | 403（challenge の印がない）                        |
+| `challenge`                | Cloudflare などの challenge、captcha               |
+| `rate_limited`             | 429                                                |
+| `upstream_error`           | 5xx、想定外のステータス                            |
+| `too_large`                | 展開後の本文が上限（5 MiB）を超えた                |
+| `unsupported_content_type` | HTML とテキスト以外                                |
+| `timeout`                  | 全体の制限時間を超えた                             |
+| `network_error`            | DNS の失敗、接続の失敗、リダイレクトの上限         |
+| `browser_unavailable`      | 共有ブラウザにつながらない                         |
 
 ### mode の自動切り替え
 
@@ -85,11 +85,11 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 
 ## Epic 一覧
 
-| Epic | ユーザーから見える成果 | 依存 |
-| --- | --- | --- |
-| E0 | repo の土台。CI が通り、GHCR にイメージが出る | なし |
-| E1 | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める | E0 |
-| E2 | 段階 2。`listRecent` で Miniflux と changedetection.io の新着を読める | E1 の F01 |
+| Epic | ユーザーから見える成果                                                | 依存      |
+| ---- | --------------------------------------------------------------------- | --------- |
+| E0   | repo の土台。CI が通り、GHCR にイメージが出る                         | なし      |
+| E1   | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める  | E0        |
+| E2   | 段階 2。`listRecent` で Miniflux と changedetection.io の新着を読める | E1 の F01 |
 
 ### E0. 土台
 
@@ -112,16 +112,16 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 
 番号は計画上の ID。右端の列が GitHub Issue の番号。
 
-| ID | Epic | タイトル | 依存 | 並行 | GitHub |
-| --- | --- | --- | --- | --- | --- |
-| F01 | E1 | HTTP API の骨組みと Access の JWT の検証 | E0 | F02, F03 と並行 | #2 |
-| F02 | E1 | SSRF の検査と http の取得 | E0 | F01, F03 と並行 | #3 |
-| F03 | E1 | 本文の取り出し（文字コード、タイトル、本文） | E0 | F01, F02 と並行 | #4 |
-| F04 | E1 | 共有ブラウザでの取得 | F02, F03 | F05 と並行 | #5 |
-| F05 | E1 | fetchText の組み立てと mode の自動切り替え | F01, F02, F03 | F04 と並行 | #6 |
-| L01 | E2 | Miniflux の adapter | F01 | L02 と並行 | #7 |
-| L02 | E2 | changedetection.io の adapter | F01 | L01 と並行 | #8 |
-| L03 | E2 | listRecent の組み立て | L01, L02 | - | #9 |
+| ID  | Epic | タイトル                                     | 依存          | 並行            | GitHub |
+| --- | ---- | -------------------------------------------- | ------------- | --------------- | ------ |
+| F01 | E1   | HTTP API の骨組みと Access の JWT の検証     | E0            | F02, F03 と並行 | #2     |
+| F02 | E1   | SSRF の検査と http の取得                    | E0            | F01, F03 と並行 | #3     |
+| F03 | E1   | 本文の取り出し（文字コード、タイトル、本文） | E0            | F01, F02 と並行 | #4     |
+| F04 | E1   | 共有ブラウザでの取得                         | F02, F03      | F05 と並行      | #5     |
+| F05 | E1   | fetchText の組み立てと mode の自動切り替え   | F01, F02, F03 | F04 と並行      | #6     |
+| L01 | E2   | Miniflux の adapter                          | F01           | L02 と並行      | #7     |
+| L02 | E2   | changedetection.io の adapter                | F01           | L01 と並行      | #8     |
+| L03 | E2   | listRecent の組み立て                        | L01, L02      | -               | #9     |
 
 ## 依存グラフ
 
