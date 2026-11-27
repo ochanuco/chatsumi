@@ -1,13 +1,14 @@
 # chatsumi 計画
 
-chatsumi は外のデータを摘んでくる窓口。docker01 で動くコンテナで、yunomi から Cloudflare Tunnel + Access のサービストークンで HTTP で呼ばれる。保存、スケジュール、通知は持たず、DO・Queue・D1 も使わない。RSS は Miniflux、ページの見張りは changedetection.io に任せ、chatsumi はそれを読み出すだけにする。
+chatsumi は外のデータを摘んでくる窓口。docker01 で動くコンテナで、yunomi から Cloudflare Tunnel + Access のサービストークンで HTTP で呼ばれる。保存とスケジュールは持たず、DO・Queue も使わない。RSS は Miniflux、ページの見張りは changedetection.io に任せる。chatsumi は Miniflux を読み出し、Miniflux の新着を地区で振り分けて Discord に送る。振り分けの規則だけは D1 から読む（ADR-0001、ADR-0002）。changedetection.io は chatsumi を通さず、自分で Discord に通知する。
 
 この repo はコードと GHCR へのイメージ公開だけを持つ。compose は chabatake の `docker01/chatsumi/`、Tunnel と Access は chabatake の `cloudflare/`、secret は 1Password の `chabatake-services/*` にあり、Komodo が配置する。
 
 ## Goal
 
 1. 段階 1：yunomi の `web_fetch`（CE8）が `fetchText` を呼び、貼られた URL のタイトルと本文を読める。JavaScript で描画するページや、http の取得が弾かれるページも、共有ブラウザで読める。
-2. 段階 2：yunomi の CE9 が `listRecent` を呼び、Miniflux の RSS の新着と changedetection.io の見張りの変化を、同じ形で読める。
+2. 段階 2：yunomi の CE9 が `listRecent` を呼び、Miniflux の RSS の新着を読める。
+3. 段階 3：Miniflux が新着を見つけると、chatsumi が地区で振り分けて、地区ごとの Discord のチャンネルやスレッドに送る。
 
 ## API
 
@@ -56,7 +57,7 @@ chatsumi は外のデータを摘んでくる窓口。docker01 で動くコン�
 
 ### `POST /listRecent`（段階 2）
 
-入力：`{ since, source?, limit }`。`since` は ISO 8601 の時刻、`source` は `"miniflux"` \| `"changedetection"`（省くと両方）、`limit` は 1〜100。
+入力：`{ since, limit }`。`since` は ISO 8601 の時刻、`limit` は 1〜100。
 
 成功：`{ ok: true, items: [{ source, id, title, url, publishedAt, summary }] }`。`publishedAt` の新しい順に並べ、`limit` 件で切る。
 
@@ -85,11 +86,12 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 
 ## Epic 一覧
 
-| Epic | ユーザーから見える成果                                                | 依存      |
-| ---- | --------------------------------------------------------------------- | --------- |
-| E0   | repo の土台。CI が通り、GHCR にイメージが出る                         | なし      |
-| E1   | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める  | E0        |
-| E2   | 段階 2。`listRecent` で Miniflux と changedetection.io の新着を読める | E1 の F01 |
+| Epic | ユーザーから見える成果                                               | 依存      |
+| ---- | -------------------------------------------------------------------- | --------- |
+| E0   | repo の土台。CI が通り、GHCR にイメージが出る                        | なし      |
+| E1   | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める | E0        |
+| E2   | 段階 2。`listRecent` で Miniflux の新着を読める                      | E1 の F01 |
+| E3   | 段階 3。Miniflux の新着を地区で振り分けて Discord に送る             | E1 の F01 |
 
 ### E0. 土台
 
@@ -104,9 +106,15 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 
 ### E2. listRecent（段階 2）
 
-- 技術範囲：Miniflux の API（`/v1/entries`、`published_after`）と changedetection.io の API（見張りの一覧と最終変化の時刻）の adapter、同じ形へのそろえ方、`listRecent` の組み立て。OSS の差し替えは adapter の中で済ませ、API の形は変えない。
+- 技術範囲：Miniflux の API（`/v1/entries`、`published_after`）の adapter と `listRecent` の組み立て。OSS の差し替えは adapter の中で済ませ、API の形は変えない。
 - 非ゴール：フィードや見張り先の登録（管理画面か API で入れる）、既読の管理、本文の取得。
-- Done：fake の API を使ったテストで、両方の新着が混ざって新しい順に並び、`since`、`source`、`limit` が効く。片方の API が落ちていても、もう片方の結果と失敗した source が返る。
+- Done：fake の API を使ったテストで、新着が新しい順に並び、`since`、`limit` が効く。
+
+### E3. 地区での振り分けと Discord への通知（段階 3）
+
+- 技術範囲：D1 の `area_maps` の読み込み（起動時と一定の間隔、Valibot での検証、読めないときは前の版）、別名の表による地区の判定、Miniflux の webhook（`new_entries`）の受け口と `X-Miniflux-Signature` の検証、地区ごとの Discord の webhook への送信。
+- 非ゴール：表を編集する画面や API、送った記事の記録、changedetection.io の通知。
+- Done：架空の地名の表を使ったテストで、別名の長い一致が優先され、除外する語が地区を決めず、見出しで決まらなければ本文で先に出た別名が使われる。署名が合わない webhook は捨てられる。
 
 ## Issue 一覧
 
@@ -119,9 +127,8 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 | F03 | E1   | 本文の取り出し（文字コード、タイトル、本文） | E0            | F01, F02 と並行 | #4     |
 | F04 | E1   | 共有ブラウザでの取得                         | F02, F03      | F05 と並行      | #5     |
 | F05 | E1   | fetchText の組み立てと mode の自動切り替え   | F01, F02, F03 | F04 と並行      | #6     |
-| L01 | E2   | Miniflux の adapter                          | F01           | L02 と並行      | #7     |
-| L02 | E2   | changedetection.io の adapter                | F01           | L01 と並行      | #8     |
-| L03 | E2   | listRecent の組み立て                        | L01, L02      | -               | #9     |
+| L01 | E2   | Miniflux の adapter                          | F01           | -               | #7     |
+| L03 | E2   | listRecent の組み立て                        | L01           | -               | #9     |
 
 ## 依存グラフ
 
@@ -131,8 +138,8 @@ graph LR
   F02 & F03 --> F04
   F01 & F02 & F03 --> F05
   F04 -.browser を足す.-> F05
-  F01 --> L01 & L02
-  L01 & L02 --> L03
+  F01 --> L01
+  L01 --> L03
 ```
 
 F05 は F04 を待たずに http だけで組み立て、F04 が入ったら browser への切り替えを足す。
@@ -142,6 +149,8 @@ F05 は F04 を待たずに http だけで組み立て、F04 が入ったら bro
 - sockpuppetbrowser は接続ごとにブラウザを立ち上げる。Playwright の `connectOverCDP` で接続でき、`browser.close()` で後始末されるかを docker01 で確かめる。
 - sockpuppetbrowser の同時接続の上限と、changedetection.io と取り合ったときの待ち方。chatsumi 側でも browser の同時実行を絞る。
 - 共有ブラウザのコンテナから宅内のネットワークと docker01 のほかのコンテナへの通信を絞れるか（上の SSRF の残りを塞ぐため）。
+- Miniflux の webhook は任意のヘッダーを付けられず、Access のサービストークンを持てない。webhook の受け口だけは JWT の検証から外して署名で確かめ、docker01 の中から届く経路（Tunnel を通さない）にできるか。
+- `X-Miniflux-Signature` は、本文の HMAC-SHA256 の 16 進として検証している。Miniflux の文書は 16 進と明記していないので、実際の要求で確かめる。
 - Cloudflare Access の JWT を chatsumi で検証するために、チームドメインと Application の AUD を chabatake の `docker01/chatsumi/` の環境変数に渡す。
 
 ## 判断が必要な点
