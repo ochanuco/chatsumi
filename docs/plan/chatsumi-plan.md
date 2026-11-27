@@ -86,12 +86,12 @@ browser の取得では、ページが出すすべてのリクエスト（iframe
 
 ## Epic 一覧
 
-| Epic | ユーザーから見える成果                                                | 依存      |
-| ---- | --------------------------------------------------------------------- | --------- |
-| E0   | repo の土台。CI が通り、GHCR にイメージが出る                         | なし      |
-| E1   | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める  | E0        |
-| E2   | 段階 2。`listRecent` で Miniflux の新着を読める                       | E1 の F01 |
-| E3   | 段階 3。Miniflux の新着を地区で振り分けて Discord に送る              | E1 の F01 |
+| Epic | ユーザーから見える成果                                               | 依存      |
+| ---- | -------------------------------------------------------------------- | --------- |
+| E0   | repo の土台。CI が通り、GHCR にイメージが出る                        | なし      |
+| E1   | 段階 1。`fetchText` で http と browser の両方の取り方で URL を読める | E0        |
+| E2   | 段階 2。`listRecent` で Miniflux の新着を読める                      | E1 の F01 |
+| E3   | 段階 3。Miniflux の新着を地区で振り分けて Discord に送る             | E1 の F01 |
 
 ### E0. 土台
 
@@ -150,6 +150,7 @@ F05 は F04 を待たずに http だけで組み立て、F04 が入ったら bro
 - sockpuppetbrowser の同時接続の上限と、changedetection.io と取り合ったときの待ち方。chatsumi 側でも browser の同時実行を絞る。
 - 共有ブラウザのコンテナから宅内のネットワークと docker01 のほかのコンテナへの通信を絞れるか（上の SSRF の残りを塞ぐため）。
 - Miniflux の webhook は任意のヘッダーを付けられず、Access のサービストークンを持てない。webhook の受け口だけは JWT の検証から外して署名で確かめ、docker01 の中から届く経路（Tunnel を通さない）にできるか。
+- `X-Miniflux-Signature` は、本文の HMAC-SHA256 の 16 進として検証している。Miniflux の文書は 16 進と明記していないので、実際の要求で確かめる。
 - Cloudflare Access の JWT を chatsumi で検証するために、チームドメインと Application の AUD を chabatake の `docker01/chatsumi/` の環境変数に渡す。
 
 ## 判断が必要な点

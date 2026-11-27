@@ -1,8 +1,11 @@
 ---
+
 status: accepted
 date: 2026-11-27
 decision-makers:
-  - ochanuco
+
+- ochanuco
+
 ---
 
 # 地区の振り分け規則を D1 の JSON ドキュメントから読む
@@ -37,8 +40,8 @@ decision-makers:
 
 選択肢 4 を選ぶ。
 
-- 表は `area_maps (feed_id TEXT PRIMARY KEY, doc TEXT CHECK (json_valid(doc)), updated_at TEXT)` に、feed ごとに 1 行で持つ。`doc` は別名・除外する語・既定の地区・通知先を持つ JSON にする
-- chatsumi は起動時と一定の間隔で全行を読み、Valibot で形を確かめてメモリに持つ。形が合わない行は捨てて、前に読めた版を使い続ける。起動時に読めなかったときは、どの記事も既定の地区に振る
+- 表は `area_maps (feed_id TEXT PRIMARY KEY, doc TEXT CHECK (json_valid(doc)), updated_at TEXT)` に、feed ごとに 1 行で持つ。`doc` は別名・除外する語・どの別名にも当たらない記事の地区（既定の地区）・地区ごとの通知先を持つ JSON にする
+- chatsumi は起動時と一定の間隔で全行を読み、Valibot で形を確かめてメモリに持つ。形が合わない行は捨てて、その feed は前に読めた版を使い続ける。起動してからまだ一度も読めていない feed の記事は、振り分けずに送らない
 - chatsumi が持つのは読み取りだけの権限にする。表を書くのは chatsumi の外（`wrangler d1 execute` など）にする
 - 通知先の webhook の URL は表に入れない。表には secret の名前だけを書き、URL は secret として chatsumi に渡す
 

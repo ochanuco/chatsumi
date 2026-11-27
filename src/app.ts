@@ -5,10 +5,19 @@ import {
 	type FetchTextInput,
 	FetchTextInputSchema,
 } from "./api.ts";
+import {
+	NewEntriesSchema,
+	verifyMinifluxSignature,
+} from "./notify/miniflux.ts";
+import type { RouteEntries } from "./notify/route.ts";
+
+const MAX_WEBHOOK_BYTES = 5 * 1024 * 1024;
 
 export type AppDeps = {
 	verifyAccess: (token: string | undefined) => Promise<boolean>;
 	fetchText: FetchText;
+	/** 無ければ webhook の口は 404 を返す */
+	minifluxWebhook?: { secret: string; routeEntries: RouteEntries };
 	log?: (line: Record<string, unknown>) => void;
 };
 
@@ -19,6 +28,57 @@ export function createApp(deps: AppDeps): Hono {
 	const app = new Hono();
 
 	app.get("/healthz", (c) => c.json({ ok: true }));
+
+	// Miniflux の webhook は Access のトークンを付けられないので、JWT の検証の前に置き、署名で確かめる
+	app.post("/webhooks/miniflux", async (c) => {
+		const hook = deps.minifluxWebhook;
+		const entry: Record<string, unknown> = {
+			route: "/webhooks/miniflux",
+			method: "POST",
+		};
+		const reply = (
+			status: 202 | 204 | 400 | 401 | 404 | 413,
+			result: string,
+		) => {
+			log({ ...entry, status, result });
+			return status === 202 || status === 204
+				? c.body(null, status)
+				: c.json({ ok: false, error: { type: result } }, status);
+		};
+		if (!hook) return reply(404, "not_found");
+		const raw = new Uint8Array(await c.req.arrayBuffer());
+		if (raw.byteLength > MAX_WEBHOOK_BYTES) return reply(413, "too_large");
+		if (
+			!verifyMinifluxSignature(
+				raw,
+				c.req.header("X-Miniflux-Signature"),
+				hook.secret,
+			)
+		) {
+			return reply(401, "unauthorized");
+		}
+		const eventType = c.req.header("X-Miniflux-Event-Type");
+		entry.event = eventType;
+		if (eventType !== "new_entries") return reply(204, "ignored");
+		let body: unknown;
+		try {
+			body = JSON.parse(new TextDecoder().decode(raw));
+		} catch {
+			return reply(400, "invalid_request");
+		}
+		const parsed = v.safeParse(NewEntriesSchema, body);
+		if (!parsed.success) return reply(400, "invalid_request");
+		entry.entries = parsed.output.entries.length;
+		// Miniflux は応答を待って次の feed に進むので、送信は待たずに返す。送れなかった分は Miniflux に残る
+		hook.routeEntries(parsed.output.entries).catch((e: unknown) => {
+			log({
+				component: "route",
+				result: "internal_error",
+				exception: e instanceof Error ? e.name : "unknown",
+			});
+		});
+		return reply(202, "accepted");
+	});
 
 	app.use("*", async (c, next) => {
 		const token = c.req.header("Cf-Access-Jwt-Assertion");

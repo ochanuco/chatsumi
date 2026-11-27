@@ -14,6 +14,7 @@ describe("loadConfig", () => {
 			ssrfExtraBlockedCidrs: undefined,
 			maxTextChars: 20000,
 			userAgent: "chatsumi/0.0 (+https://github.com/ochanuco/chatsumi)",
+			routing: undefined,
 		});
 	});
 
@@ -59,5 +60,54 @@ describe("loadConfig", () => {
 		expect(() => loadConfig({ ...base, BROWSER_CDP_URL: "nope" })).toThrow(
 			/BROWSER_CDP_URL/,
 		);
+	});
+
+	describe("routing", () => {
+		const routing = {
+			MINIFLUX_WEBHOOK_SECRET: "s",
+			AREA_MAPS_D1_ACCOUNT_ID: "acct",
+			AREA_MAPS_D1_DATABASE_ID: "db",
+			AREA_MAPS_D1_API_TOKEN: "tok",
+			DISCORD_WEBHOOKS:
+				'{"minato":"https://discord.com/api/webhooks/1/x?thread_id=2"}',
+		};
+
+		it("MINIFLUX_WEBHOOK_SECRET が無ければ使わない", () => {
+			const { MINIFLUX_WEBHOOK_SECRET: _s, ...rest } = routing;
+			expect(loadConfig({ ...base, ...rest }).routing).toBeUndefined();
+		});
+
+		it("そろっていれば読む", () => {
+			const r = loadConfig({ ...base, ...routing }).routing;
+			expect(r).toMatchObject({
+				minifluxWebhookSecret: "s",
+				d1AccountId: "acct",
+				d1DatabaseId: "db",
+				d1ApiToken: "tok",
+				refreshSeconds: 300,
+			});
+			expect(r?.discordWebhooks.get("minato")).toBe(
+				"https://discord.com/api/webhooks/1/x?thread_id=2",
+			);
+		});
+
+		it("欠けていれば変数名つきで投げる", () => {
+			const { AREA_MAPS_D1_API_TOKEN: _t, ...rest } = routing;
+			expect(() => loadConfig({ ...base, ...rest })).toThrow(
+				/AREA_MAPS_D1_API_TOKEN/,
+			);
+		});
+
+		it("Discord の webhook 以外の URL や壊れた JSON で投げる", () => {
+			for (const DISCORD_WEBHOOKS of [
+				'{"a":"https://example.com/api/webhooks/1/x"}',
+				'{"a":"http://discord.com/api/webhooks/1/x"}',
+				"{not json",
+			]) {
+				expect(() =>
+					loadConfig({ ...base, ...routing, DISCORD_WEBHOOKS }),
+				).toThrow(/DISCORD_WEBHOOKS/);
+			}
+		});
 	});
 });

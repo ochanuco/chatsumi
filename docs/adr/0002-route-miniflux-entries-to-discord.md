@@ -1,8 +1,11 @@
 ---
+
 status: accepted
 date: 2026-11-27
 decision-makers:
-  - ochanuco
+
+- ochanuco
+
 ---
 
 # Miniflux の新着を chatsumi が地区で振り分けて Discord に送る
