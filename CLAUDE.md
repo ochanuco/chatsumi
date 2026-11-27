@@ -21,6 +21,7 @@ chatsumi は外のデータを摘んでくる窓口で、状態を持たない�
 - `src/extract/`: 文字コードの判定、タイトルと本文の取り出し、切り詰め
 - `src/areas/`: 地区の振り分け。`rules.ts`（規則の形と判定）、`d1.ts`（D1 の REST API で規則を読む）、`store.ts`（読み直しとメモリへの保持）
 - `src/notify/`: `miniflux.ts`（webhook の署名と本文の形）、`discord.ts`（書式と送信）、`route.ts`（振り分けて送る）
+- `wrangler.jsonc`・`migrations/`: D1 の database `chatsumi` と表。chatsumi は Worker ではなく、wrangler はこのためだけに使う。表を変えたら `pnpm d1:migrate`
 - `src/outbound/post.ts`: 設定で決まる宛先（Cloudflare の API、Discord の webhook）への POST
 - イメージは `main` への push で `ghcr.io/ochanuco/chatsumi:{sha-xxxxxxx,main}` に出る。続けて `deploy` job が chabatake の `docker01-app` を dispatch し、その版を docker01 に配置する（`ochanuco/.github` の `actions/chabatake-dispatch`）。Environment `production` の secret `OP_SA_DEPLOY` を使う
 
