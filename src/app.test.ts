@@ -207,6 +207,17 @@ describe("POST /webhooks/miniflux", () => {
 		expect((await send("{not json")).status).toBe(400);
 	});
 
+	it("大きすぎる本文は読む前に 413", async () => {
+		const { app, routed } = setupHook();
+		const res = await app.request("/webhooks/miniflux", {
+			method: "POST",
+			headers: { "Content-Length": String(6 * 1024 * 1024) },
+			body: "x",
+		});
+		expect(res.status).toBe(413);
+		expect(routed).toEqual([]);
+	});
+
 	it("設定が無ければ 404", async () => {
 		const { send } = setupHook(false);
 		expect((await send(JSON.stringify(payload))).status).toBe(404);
