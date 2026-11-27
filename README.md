@@ -47,7 +47,7 @@ curl -X POST localhost:8080/fetchText -H 'content-type: application/json' \
 
 ### 規則の形
 
-D1 の `area_maps` に、feed ごとに 1 行で置く。
+D1 の database `chatsumi` の `area_maps` に、feed ごとに 1 行で置く。database と表は `wrangler.jsonc` と `migrations/` が持ち、表を変えたら `pnpm d1:migrate` で流す。chatsumi は Worker ではないので、wrangler はこのためだけに使う。
 
 ```sql
 CREATE TABLE area_maps (

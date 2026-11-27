@@ -1,0 +1,13 @@
+// chatsumi は Worker ではない。wrangler は D1（地区の振り分け規則）の database と表の migration を持つためだけに使う
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "chatsumi",
+	"d1_databases": [
+		{
+			"binding": "AREA_MAPS",
+			"database_name": "chatsumi",
+			"database_id": "62ae62e1-1728-4657-aed1-b65599b79784",
+			"migrations_dir": "migrations"
+		}
+	]
+}
