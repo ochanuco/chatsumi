@@ -82,7 +82,7 @@ jobs:
       group: docker01-chatsumi
       cancel-in-progress: false
     steps:
-      - uses: ochanuco/.github/actions/chabatake-dispatch@194995de7425c6457f8d802510787afd02ed9235 # v1.7.0
+      - uses: ochanuco/.github/actions/chabatake-dispatch@781255530e060ff35b956a9b417d4c4ec6bfa970 # v1.7.1
         with:
           workflow: docker01-app.yml
           inputs: '{"service": "chatsumi", "tag": "${{ needs.publish.outputs.tag }}"}'
